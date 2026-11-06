@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BIOZO Admin - Applications</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+  <div class="mx-auto max-w-6xl px-4 py-10">
+    <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div>
+        <p class="text-sm text-slate-500">Admin Dashboard</p>
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900">Saved Applications</h1>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <a href="biozo9.html" class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">Open portal</a>
+        <button id="refreshBtn" class="rounded-full bg-bio-primary px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-bio-dark">Refresh</button>
+      </div>
+    </div>
+
+    <div id="status" class="mb-4 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
+      Loading applications...
+    </div>
+
+    <div class="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-4 py-3 font-medium text-slate-700">Submitted</th>
+            <th class="px-4 py-3 font-medium text-slate-700">Name</th>
+            <th class="px-4 py-3 font-medium text-slate-700">Student ID</th>
+            <th class="px-4 py-3 font-medium text-slate-700">Email</th>
+            <th class="px-4 py-3 font-medium text-slate-700">Wing</th>
+          </tr>
+        </thead>
+        <tbody id="applicationsTable" class="divide-y divide-slate-200"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const tableBody = document.getElementById('applicationsTable');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    async function loadApplications() {
+      statusEl.textContent = 'Loading applications...';
+      statusEl.className = 'mb-4 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm';
+      tableBody.innerHTML = '';
+
+      try {
+        const response = await fetch('/api/applications');
+        if (!response.ok) {
+          throw new Error('Failed to fetch applications: ' + response.status);
+        }
+        const applications = await response.json();
+
+        if (!applications.length) {
+          statusEl.textContent = 'No applications have been submitted yet.';
+          return;
+        }
+
+        applications.forEach(app => {
+          const row = document.createElement('tr');
+
+const values = [
+  new Date(app.submittedAt).toLocaleString(),
+  app.fullName || '-',
+  app.studentId || '-',
+  app.email || '-',
+  app.wing || '-'
+];
+
+const classes = [
+  'px-4 py-4 text-slate-500',
+  'px-4 py-4 font-medium text-slate-900',
+  'px-4 py-4 text-slate-700',
+  'px-4 py-4 text-slate-700',
+  'px-4 py-4 text-slate-700'
+];
+
+values.forEach((value, index) => {
+  const cell = document.createElement('td');
+  cell.className = classes[index];
+  cell.textContent = String(value);
+  row.appendChild(cell);
+});
+
+tableBody.appendChild(row);
+          tableBody.appendChild(row);
+        });
+
+        statusEl.textContent = `Showing ${applications.length} application${applications.length === 1 ? '' : 's'}.`;
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = 'Unable to load applications. Please ensure the backend is running on port 3000.';
+        statusEl.className = 'mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 shadow-sm';
+      }
+    }
+
+    refreshBtn.addEventListener('click', loadApplications);
+    loadApplications();
+
+
+  </script>
+  <section id="adminManagement" class="hidden mt-8 p-6 bg-white rounded-xl shadow">
+  <h2 class="text-xl font-bold mb-4">Admin Management</h2>
+
+  <div class="flex gap-2 mb-4">
+    <input id="newAdminEmail" type="email"
+      placeholder="Enter Gmail address"
+      class="border rounded-lg p-2 flex-1">
+    <button onclick="addAdmin()"
+      class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+      Add Admin
+    </button>
+  </div>
+
+  <div id="adminList"></div>
+</section>
+
+<script>
+async function loadAdminManagement() {
+  const section = document.getElementById('adminManagement');
+  const me = await fetch('/api/me').then(r => r.json());
+
+  if (me.role !== 'super_admin') return;
+
+  section.classList.remove('hidden');
+  await refreshAdminList();
+}
+
+async function refreshAdminList() {
+  const response = await fetch('/api/admins');
+  if (!response.ok) return;
+
+  const admins = await response.json();
+  const list = document.getElementById('adminList');
+  list.replaceChildren();
+
+  admins.forEach(admin => {
+    const item = document.createElement('div');
+    item.className = 'flex justify-between items-center border-b py-3';
+
+    const label = document.createElement('span');
+    label.textContent = `${admin.email} — ${admin.role}`;
+    item.appendChild(label);
+
+    if (admin.role === 'admin') {
+      const button = document.createElement('button');
+      button.textContent = 'Remove';
+      button.className = 'bg-red-600 text-white px-3 py-1 rounded';
+      button.onclick = () => removeAdmin(admin.email);
+      item.appendChild(button);
+    }
+
+    list.appendChild(item);
+  });
+}
+
+async function addAdmin() {
+  const input = document.getElementById('newAdminEmail');
+  const response = await fetch('/api/admins', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: input.value })
+  });
+
+  const result = await response.json();
+  alert(result.message || result.error);
+  if (response.ok) {
+    input.value = '';
+    refreshAdminList();
+  }
+}
+
+async function removeAdmin(email) {
+  if (!confirm(`Remove ${email} as admin?`)) return;
+
+  const response = await fetch(
+    '/api/admins/' + encodeURIComponent(email),
+    { method: 'DELETE' }
+  );
+
+  const result = await response.json();
+  alert(result.message || result.error);
+  if (response.ok) refreshAdminList();
+}
+
+loadAdminManagement();
+</script>
+
+</body>
+</html>

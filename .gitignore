@@ -1,0 +1,5 @@
+node_modules/
+biozo.db
+npm-debug.log
+.DS_Store
+.env
