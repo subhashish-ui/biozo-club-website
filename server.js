@@ -89,6 +89,7 @@ app.get('/auth/google/callback',
     failureRedirect: '/login.html'
   }),
   (req, res) => {
+    console.log('GOOGLE CALLBACK SUCCESS');
     res.redirect('/admin.html');
   }
 );
