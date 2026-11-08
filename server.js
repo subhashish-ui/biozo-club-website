@@ -67,9 +67,13 @@ passport.deserializeUser((user, done) => {
 });
 
 console.log('Google login route registered');
+
 // Start Google login
 app.get('/auth/google',
-  console.log('Google login route hit');
+  (req, res, next) => {
+    console.log('Google login route hit');
+    next();
+  },
   passport.authenticate('google', {
     scope: ['profile', 'email']
   })
