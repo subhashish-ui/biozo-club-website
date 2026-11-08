@@ -47,7 +47,11 @@ passport.use(new GoogleStrategy({
     [email],
     (err, admin) => {
       if (err) return done(err);
-      if (!admin) return done(null, false);
+      if (!admin) {
+   console.log('ADMIN NOT FOUND:', email);
+   return done(null, false);
+ }
+ console.log('ADMIN FOUND:', email, admin.role);
 
       return done(null, {
         email: admin.email,
